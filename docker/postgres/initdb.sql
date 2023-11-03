@@ -33,6 +33,8 @@ CREATE TABLE d_date
   weekend_indr             BOOLEAN NOT NULL
 );
 
+
+
 ALTER TABLE public.d_date ADD CONSTRAINT d_date_date_dim_id_pk PRIMARY KEY (date_dim_id);
 
 CREATE INDEX d_date_date_actual_idx
