@@ -1,0 +1,5 @@
+opencv-python==4.8.1.78
+xgboost
+lightgbm
+catboost
+psycopg2-binary

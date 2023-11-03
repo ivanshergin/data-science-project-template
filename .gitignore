@@ -1,0 +1,14 @@
+# Jupyter #
+####################
+.cache/
+.config/
+.ipython/
+.local/
+.ipynb_checkpoints
+.jupyter/
+
+# Other #
+#####################
+lib/__pycache__/
+env.source
+commands
