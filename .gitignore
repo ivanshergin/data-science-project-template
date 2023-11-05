@@ -6,9 +6,9 @@
 .local/
 .ipynb_checkpoints
 .jupyter/
+.vscode
 
 # Other #
 #####################
 lib/__pycache__/
 env.source
-commands
