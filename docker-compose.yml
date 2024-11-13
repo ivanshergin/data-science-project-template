@@ -1,6 +1,7 @@
 version: "3.8"
 services:
   jupyter:
+    container_name: ds_jupyter
     build: ./docker/jupyter/
     volumes:
       - ./:/home/jovyan/work/
@@ -12,6 +13,7 @@ services:
       - "POSTGRES_DB=${POSTGRES_DB}"
       - "POSTGRES_PORT=${POSTGRES_PORT}"
   postgres:
+    container_name: ds_postgres
     build: ./docker/postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -23,5 +25,16 @@ services:
       - "POSTGRES_PORT=${POSTGRES_PORT}"
     ports:
       - 5432:5432
+  mlflow:
+    container_name: ds_mlflow
+    build: ./docker/mlflow
+    volumes:
+      - mlflow_data:/mlflow
+    environment:
+      - MLFLOW_TRACKING_URI=http://localhost:5000
+    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB} -h 0.0.0.0 --default-artifact-root ./artifacts
+    ports:
+      - 5000:5000
 volumes:
   postgres_data:
+  mlflow_data:
