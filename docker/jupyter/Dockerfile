@@ -1,4 +1,4 @@
-FROM jupyter/datascience-notebook:latest
+FROM jupyter/datascience-notebook:x86_64-ubuntu-22.04
 
 ENV POSTGRES_USER=${POSTGRES_USER}
 ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}

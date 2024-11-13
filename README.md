@@ -1,7 +1,8 @@
 # Template for DS projects
 ## Docker containers
-    - jupyter/datascience-notebook:latest
+    - jupyter/datascience-notebook:x86_64-ubuntu-22.04
     - postgres:15.3
+    - ghcr.io/mlflow/mlflow:v2.17.2
 ## Docker commands
 1. Start containers
 
@@ -18,7 +19,7 @@ docker-compose up --build
 3. Start containers with env params
 
 ```
-docker-compose --env-file env.source up
+docker-compose --env-file env.source up --build
 ```
 
 4. Stop containers
