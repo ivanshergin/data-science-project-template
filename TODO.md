@@ -1,8 +1,9 @@
-Libs to include:
+Libs/ tools to include:
 
 1) torch
 2) docker cuda support
 3) optuna
 4) minio (another s3 support)
 5) transformers
-6) ...
+6) airflow
+7) pyspark
