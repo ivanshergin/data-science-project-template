@@ -1,10 +1,20 @@
 version: "3.8"
+
+networks:
+  ds_network:
+    external:
+      name: ds_network
+
+volumes:
+  postgres_data:
+  mlflow_data:
+
 services:
   jupyter:
     container_name: ds_jupyter
-    build: ./docker/jupyter/
+    build: ./jupyter/
     volumes:
-      - ./:/home/jovyan/work/
+      - ../:/home/jovyan/work/
     ports:
       - 8888:8888
     environment:
@@ -12,9 +22,16 @@ services:
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
       - "POSTGRES_DB=${POSTGRES_DB}"
       - "POSTGRES_PORT=${POSTGRES_PORT}"
+      - "MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}"
+      - "MLFLOW_HOST=${MLFLOW_HOST}"
+    networks:
+      ds_network:
+        aliases:
+          - "jupyter"
+
   postgres:
     container_name: ds_postgres
-    build: ./docker/postgres
+    build: ./postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -25,16 +42,24 @@ services:
       - "POSTGRES_PORT=${POSTGRES_PORT}"
     ports:
       - 5432:5432
+    networks:
+      ds_network:
+        aliases:
+          - "postgres"
+
   mlflow:
     container_name: ds_mlflow
-    build: ./docker/mlflow
+    build: ./mlflow
     volumes:
       - mlflow_data:/mlflow
     environment:
-      - MLFLOW_TRACKING_URI=http://localhost:5000
-    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB} -h 0.0.0.0 --default-artifact-root ./artifacts
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB} -h ${MLFLOW_HOST} --default-artifact-root ./artifacts
     ports:
       - 5000:5000
-volumes:
-  postgres_data:
-  mlflow_data:
+    depends_on:
+      - postgres
+    networks:
+      ds_network:
+        aliases:
+          - "mlflow"
