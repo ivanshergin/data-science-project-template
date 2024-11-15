@@ -23,7 +23,6 @@ services:
       - "POSTGRES_DB=${POSTGRES_DB}"
       - "POSTGRES_PORT=${POSTGRES_PORT}"
       - "MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}"
-      - "MLFLOW_HOST=${MLFLOW_HOST}"
     networks:
       ds_network:
         aliases:
@@ -52,9 +51,7 @@ services:
     build: ./mlflow
     volumes:
       - mlflow_data:/mlflow
-    environment:
-      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
-    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB} -h ${MLFLOW_HOST} --default-artifact-root ./artifacts
+    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB} --default-artifact-root ./artifacts -h 0.0.0.0 -p 5000
     ports:
       - 5000:5000
     depends_on:
