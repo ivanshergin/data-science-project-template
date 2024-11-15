@@ -2,7 +2,7 @@
 ## Docker containers
     - jupyter/datascience-notebook:x86_64-ubuntu-22.04
     - postgres:15.3
-    - ghcr.io/mlflow/mlflow:v2.17.2
+    - ghcr.io/mlflow/mlflow:v2.18.0rc0
 ## Docker commands
 1. Start containers
 
