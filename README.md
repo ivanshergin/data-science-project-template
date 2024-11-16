@@ -3,6 +3,7 @@
     - jupyter/datascience-notebook:x86_64-ubuntu-22.04
     - postgres:15.3
     - ghcr.io/mlflow/mlflow:v2.18.0rc0
+    - minio/minio:RELEASE.2024-11-07T00-52-20Z
 ## Docker commands
 1. Start containers
 

@@ -8,6 +8,7 @@ networks:
 volumes:
   postgres_data:
   mlflow_data:
+  minio_data:
 
 services:
   jupyter:
@@ -21,8 +22,12 @@ services:
       - "POSTGRES_USER=${POSTGRES_USER}"
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
       - "POSTGRES_DB=${POSTGRES_DB}"
-      - "POSTGRES_PORT=${POSTGRES_PORT}"
+      - "POSTGRES_PORT=5432"
       - "MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}"
+      - "MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}"
+      - "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}"
+      - "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
+      - "AWS_S3_BUCKET_MLFLOW=${AWS_S3_BUCKET_MLFLOW}"
     networks:
       ds_network:
         aliases:
@@ -38,7 +43,7 @@ services:
       - "POSTGRES_USER=${POSTGRES_USER}"
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
       - "POSTGRES_DB=${POSTGRES_DB}"
-      - "POSTGRES_PORT=${POSTGRES_PORT}"
+      - "POSTGRES_PORT=5432"
     ports:
       - 5432:5432
     networks:
@@ -46,16 +51,46 @@ services:
         aliases:
           - "postgres"
 
+  minio:
+    container_name: ds_minio
+    build: ./minio
+    command: server --console-address ":9001" /data/
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      ds_network:
+        aliases:
+          - "minio"
+
   mlflow:
     container_name: ds_mlflow
     build: ./mlflow
     volumes:
       - mlflow_data:/mlflow
-    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB} --default-artifact-root ./artifacts -h 0.0.0.0 -p 5000
+    entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB} --default-artifact-root s3://${AWS_S3_BUCKET_MLFLOW} -h 0.0.0.0 -p 5000
+    # ./artifacts instead of s3
     ports:
       - 5000:5000
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     depends_on:
       - postgres
+      - minio
     networks:
       ds_network:
         aliases:
