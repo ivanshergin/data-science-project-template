@@ -19,7 +19,7 @@ docker-compose up --build
 3. Start containers with env params
 
 ```
-docker-compose --env-file env.source up --build
+docker-compose --env-file .env up --build
 ```
 
 4. Stop containers
