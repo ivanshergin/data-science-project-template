@@ -7,8 +7,8 @@
 .ipynb_checkpoints
 .jupyter/
 .vscode
+mlruns
 
 # Other #
 #####################
 lib/__pycache__/
-env.source
