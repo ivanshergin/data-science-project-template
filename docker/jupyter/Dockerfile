@@ -9,5 +9,6 @@ USER root
 COPY requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 WORKDIR /home/jovyan/work/
