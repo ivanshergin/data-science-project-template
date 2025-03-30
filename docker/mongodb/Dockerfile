@@ -1,0 +1,3 @@
+FROM mongo:7.0.18-jammy
+
+EXPOSE 27017

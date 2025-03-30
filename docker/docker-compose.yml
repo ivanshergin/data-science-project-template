@@ -6,9 +6,10 @@ networks:
       name: ds_network
 
 volumes:
-  postgres_data:
-  mlflow_data:
-  minio_data:
+  ds_postgres_data:
+  ds_minio_data:
+  ds_mlflow_data:
+  ds_mongo_data:
 
 services:
   jupyter:
@@ -24,10 +25,13 @@ services:
       - "POSTGRES_DB=${POSTGRES_DB}"
       - "POSTGRES_PORT=5432"
       - "MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}"
-      - "MLFLOW_S3_ENDPOINT_URL=${MLFLOW_S3_ENDPOINT_URL}"
+      - "S3_ENDPOINT_URL=${S3_ENDPOINT_URL}"
       - "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}"
       - "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
       - "AWS_S3_BUCKET_MLFLOW=${AWS_S3_BUCKET_MLFLOW}"
+      - "MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}"
+      - "MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}"
+      - "MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/"
     networks:
       ds_network:
         aliases:
@@ -37,7 +41,7 @@ services:
     container_name: ds_postgres
     build: ./postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ds_postgres_data:/var/lib/postgresql/data
       # - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - "POSTGRES_USER=${POSTGRES_USER}"
@@ -46,6 +50,11 @@ services:
       - "POSTGRES_PORT=5432"
     ports:
       - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
     networks:
       ds_network:
         aliases:
@@ -64,11 +73,11 @@ services:
       MINIO_ACCESS_KEY: ${AWS_ACCESS_KEY_ID}
       MINIO_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
     volumes:
-      - minio_data:/data
+      - ds_minio_data:/data
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
+      interval: 10s
+      timeout: 10s
       retries: 3
     networks:
       ds_network:
@@ -79,7 +88,7 @@ services:
     container_name: ds_mlflow
     build: ./mlflow
     volumes:
-      - mlflow_data:/mlflow
+      - ds_mlflow_data:/mlflow
     entrypoint: mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB} --default-artifact-root s3://${AWS_S3_BUCKET_MLFLOW} -h 0.0.0.0 -p 5000
     # ./artifacts instead of s3
     ports:
@@ -87,9 +96,9 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
-      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_S3_ENDPOINT_URL: ${S3_ENDPOINT_URL}
     depends_on:
       - postgres
       - minio
@@ -97,3 +106,36 @@ services:
       ds_network:
         aliases:
           - "mlflow"
+
+  mongo:
+    container_name: ds_mongo
+    build: ./mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - ds_mongo_data:/data/db
+    networks:
+      ds_network:
+        aliases:
+          - "mongo"
+  mongo-express:
+    container_name: ds_mongo_exp
+    build:
+      context: ./mongodb
+      dockerfile: Dockerfile_mongoexpress
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongo
+    networks:
+      ds_network:
+        aliases:
+          - "mongo_exp"
